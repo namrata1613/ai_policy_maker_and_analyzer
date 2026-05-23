@@ -1,8 +1,12 @@
-numpy
-streamlit 
+# numpy
+# streamlit 
 duckdb 
-pandas 
-plotly
+# pandas 
+# plotly
 scikit-learn
 docling==2.92.0
 docling-core==2.74.1
+streamlit>=1.35.0
+plotly>=5.22.0
+pandas>=2.1.0
+numpy>=1.26.0

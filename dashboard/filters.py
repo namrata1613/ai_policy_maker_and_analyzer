@@ -141,7 +141,37 @@ def load_all_data(db_path: str = DB_PATH) -> dict:
 
 def render_sidebar(scores_df: pd.DataFrame) -> dict:
     with st.sidebar:
-        st.markdown("## Filters")
+        st.markdown(
+            """
+            <div class='sidebar-panel'>
+                <div class='sidebar-title'>Operational Control</div>
+                <div class='sidebar-subtitle'>Digital Desert command center</div>
+                <div class='sidebar-subtitle' style='margin-top:0.7rem;'>Filter by year, state, district, or MCI band, then inspect charts, policy recommendations, and AI insights.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if st.session_state.get("reset_filters", False):
+            defaults = {
+                "year_filter": "All",
+                "state_filter": "All",
+                "district_filter": "All",
+                "cls_filter": "All",
+                "mci_range": (0, 100),
+                "desert_only": False,
+            }
+            for key, value in defaults.items():
+                st.session_state[key] = value
+            st.session_state["reset_filters"] = False
+
+        st.markdown("---")
+
+        # Year filter
+        year_options = ["All"] + sorted(
+            scores_df["year"].dropna().astype(int).unique().tolist()
+        )
+        selected_year = st.selectbox("Year", year_options, key="year_filter")
 
         # State filter (uses statename for display, canonical_state for filtering)
         state_options = ["All"] + sorted(
@@ -177,17 +207,29 @@ def render_sidebar(scores_df: pd.DataFrame) -> dict:
         # Desert-only toggle
         desert_only = st.checkbox("Show digital deserts only", key="desert_only")
 
+        if st.button("♻️ Reset filters", use_container_width=True, key="reset_filters_btn"):
+            st.session_state["reset_filters"] = True
+
         st.markdown("---")
-        st.markdown("## About")
         st.markdown(
-            "**MCI** — Minimum Connectivity Index (0–100)\n\n"
-            "- < 25: Severe desert\n"
-            "- 25–45: Moderate desert\n"
-            "- 46–60: Partial connectivity\n"
-            "- 61–75: Near-connected\n"
-            "- > 75: Connected\n\n"
-            "**WSI** — Women Safety Index  \n"
-            "**WEI** — Women Employment Index"
+            """
+            <div class='sidebar-panel'>
+                <div class='sidebar-title'>Data Definitions</div>
+                <div class='sidebar-subtitle'><strong>MCI</strong> — Minimum Connectivity Index (0–100)</div>
+                <div class='sidebar-subtitle' style='margin-top:0.5rem;'>
+                <span style='color:#cbd5e1;'>• < 25: Severe desert</span><br>
+                <span style='color:#cbd5e1;'>• 25–45: Moderate desert</span><br>
+                <span style='color:#cbd5e1;'>• 46–60: Partial connectivity</span><br>
+                <span style='color:#cbd5e1;'>• 61–75: Near-connected</span><br>
+                <span style='color:#cbd5e1;'>• > 75: Connected</span>
+                </div>
+                <div class='sidebar-subtitle' style='margin-top:0.75rem;'>
+                    <strong>WSI</strong> — Women Safety Index<br>
+                    <strong>WEI</strong> — Women Employment Index
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
         st.markdown("---")
         if st.button("🔄 Reload data"):
@@ -195,6 +237,7 @@ def render_sidebar(scores_df: pd.DataFrame) -> dict:
             st.rerun()
 
     return {
+        "year":        selected_year,
         "state":       selected_state,
         "district":    selected_district,
         "cls":         selected_cls,
@@ -205,6 +248,8 @@ def render_sidebar(scores_df: pd.DataFrame) -> dict:
 
 def apply_filters(df: pd.DataFrame, filters: dict) -> pd.DataFrame:
     f = df.copy()
+    if filters["year"] != "All":
+        f = f[f["year"] == int(filters["year"])]
     if filters["state"] != "All":
         f = f[f["statename"] == filters["state"]]
     if filters["district"] != "All":

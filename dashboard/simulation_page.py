@@ -675,6 +675,10 @@ def render_simulation_page() -> None:
         "on MCI, women's safety, employment, and digital inclusion. "
         "All projections are grounded in comparable Indian programme outcomes."
     )
+    st.info(
+        "Start by selecting a state and district, then choose your policy objective. "
+        "Adjust the sliders to explore how different interventions change outcomes."
+    )
     st.markdown("---")
 
     # Load data
