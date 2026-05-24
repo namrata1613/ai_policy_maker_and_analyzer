@@ -40,6 +40,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+if "expanded_card" not in st.session_state:
+    st.session_state.expanded_card = None
+
 st.markdown(
     """
     <style>
@@ -196,7 +199,7 @@ st.markdown(
     .hud-scoreboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.1rem; }
     .stTabs [role="tab"] { font-family: 'Sora', sans-serif !important; text-transform: uppercase !important; letter-spacing: 0.18em !important; color: #ccd6f6 !important; border-radius: 12px !important; }
     .stTabs [role="tab"][aria-selected="true"] { background: rgba(77,210,255,0.12) !important; box-shadow: 0 0 22px rgba(77,210,255,0.18) !important; border: 1px solid rgba(77,210,255,0.28) !important; }
-    </style>
+
     """,
     unsafe_allow_html=True,
 )
@@ -219,6 +222,9 @@ with tab_dashboard:
 
     filters     = render_sidebar(scores_df)
     filtered_df = apply_filters(scores_df, filters)
+    filtered_df = filtered_df.copy()
+    if "statename" in filtered_df.columns:
+        filtered_df["statename"] = filtered_df["statename"].astype(str).str.title()
     n_total     = len(filtered_df)
 
     st.markdown(
@@ -236,8 +242,8 @@ with tab_dashboard:
                         <div style='font-size:1.1rem;font-weight:700;color:#f8fbff;margin-top:0.45rem;'>State × District</div>
                     </div>
                     <div class='hud-card-panel'>
-                        <div style='font-size:0.7rem;letter-spacing:0.22em;color:#d0d8ff;text-transform:uppercase;'>Data posture</div>
-                        <div style='font-size:1.1rem;font-weight:700;color:#b3f0ff;margin-top:0.45rem;'>Neon command</div>
+                        <div style='font-size:0.7rem;letter-spacing:0.22em;color:#d0d8ff;text-transform:uppercase;'>Analytics mode</div>
+                        <div style='font-size:1.1rem;font-weight:700;color:#b3f0ff;margin-top:0.45rem;'>Insight-ready</div>
                     </div>
                 </div>
             </div>
@@ -285,25 +291,44 @@ with tab_dashboard:
     col_l, col_r = st.columns(2)
     with col_l:
         st.markdown("#### District classification breakdown")
+        st.caption("Count of districts by MCI category in the current filtered view.")
         if n_total:
-            st.plotly_chart(classification_bar(filtered_df), use_container_width=True)
+            st.plotly_chart(
+                classification_bar(filtered_df),
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
     with col_r:
         st.markdown("#### Average factor scores")
+        st.caption("Average score by factor for selected states and districts.")
         if n_total:
-            st.plotly_chart(factor_avg_bar(filtered_df), use_container_width=True)
+            st.plotly_chart(
+                factor_avg_bar(filtered_df),
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
 
     # ── Row 2: MCI scatter + WSI/WEI quadrant ────────────────────────────────
     col_l2, col_r2 = st.columns(2)
     with col_l2:
         st.markdown("#### MCI by district")
+        st.caption("District MCI values plotted to highlight low-connectivity pockets.")
         if n_total:
-            st.plotly_chart(mci_scatter(filtered_df), use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(
+                mci_scatter(filtered_df),
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
     with col_r2:
         st.markdown("#### WSI vs WEI — women impact quadrant")
+        st.caption("Women Safety Index versus Women Employment Index for each district.")
         if n_total and "WSI" in filtered_df.columns:
-            st.plotly_chart(wsi_wei_quadrant(filtered_df), use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(
+                wsi_wei_quadrant(filtered_df),
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
 
-    # ── Row 3: District table ─────────────────────────────────────────────────
     st.markdown("---")
     st.markdown("#### District-level scores")
     if n_total:
@@ -368,7 +393,11 @@ with tab_dashboard:
     st.markdown("---")
     st.markdown("#### Connectivity profile clusters")
     if not cluster_df.empty:
-        st.plotly_chart(cluster_centroid_chart(cluster_df), use_container_width=True)
+        st.plotly_chart(
+            cluster_centroid_chart(cluster_df),
+            use_container_width=True,
+            config={"displayModeBar": False},
+        )
         CLUSTER_COLORS = [
             "#E24B4A","#EF9F27","#378ADD","#7F77DD","#1D9E75","#639922","#D4537E",
         ]
@@ -393,6 +422,7 @@ with tab_dashboard:
                     unsafe_allow_html=True,
                 )
 
+
     # ── Row 6: RF importance ──────────────────────────────────────────────────
     st.markdown("---")
     st.markdown("#### Intervention levers — random forest feature importance")
@@ -401,7 +431,11 @@ with tab_dashboard:
         "Higher importance = higher-leverage policy intervention target."
     )
     if not imp_df.empty:
-        st.plotly_chart(rf_importance_bar(imp_df), use_container_width=True)
+        st.plotly_chart(
+            rf_importance_bar(imp_df),
+            use_container_width=True,
+            config={"displayModeBar": False},
+        )
         st.info(
             "**Key finding:** No-phone household rate and illiteracy are the top "
             "predictors of MCI in this dataset — physical access and structural "
@@ -416,7 +450,11 @@ with tab_dashboard:
         "kept separate for policy-narrative clarity."
     )
     if n_total >= 5:
-        st.plotly_chart(spearman_heatmap(filtered_df), use_container_width=True)
+        st.plotly_chart(
+            spearman_heatmap(filtered_df),
+            use_container_width=True,
+            config={"displayModeBar": False},
+        )
 
     # ── Chatbot ───────────────────────────────────────────────────────────────
     render_chatbot(selected_area_scores=selected_area_scores)
